@@ -6,19 +6,42 @@
     <title>VEX Utility Hub</title>
     <style>
         :root { --bg: #1a1a2e; --card: #16213e; --accent: #e94560; --highlight: #4ecca3; --blue: #3b82f6; }
-        body { font-family: sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; }
+        body { font-family: sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; min-height: 100vh; }
         
-        /* Navigation Tabs */
-        .tabs { display: flex; width: 100%; max-width: 500px; margin-bottom: 20px; gap: 10px; }
+        /* Password Lock Overlay */
+        #lock-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 1000; 
+        }
+        .lock-box {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 80%;
+            max-width: 300px;
+        }
+
+        /* Main Content (Hidden by default) */
+        #main-content { display: none; width: 100%; max-width: 500px; }
+
+        .tabs { display: flex; width: 100%; margin-bottom: 20px; gap: 10px; }
         .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: var(--card); color: white; cursor: pointer; font-weight: bold; }
         .tab-btn.active { background: var(--accent); }
 
-        .card { background: var(--card); padding: 20px; border-radius: 15px; width: 100%; max-width: 460px; box-sizing: border-box; display: none; }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; width: 100%; box-sizing: border-box; display: none; }
         .card.active { display: block; }
         
         h2 { text-align: center; color: var(--accent); margin-top: 0; }
         .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.9rem; }
-        input[type="number"] { width: 60px; padding: 8px; border-radius: 5px; border: 1px solid #0f3460; background: var(--bg); color: white; text-align: center; }
+        input[type="number"], input[type="password"] { padding: 8px; border-radius: 5px; border: 1px solid #0f3460; background: var(--bg); color: white; text-align: center; }
         
         .alliance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .alliance-header { text-align: center; font-weight: bold; padding: 5px; border-radius: 5px; margin-bottom: 10px; }
@@ -27,71 +50,100 @@
 
         .result-box { text-align: center; font-size: 1.5rem; font-weight: bold; margin-top: 20px; padding: 15px; border: 2px dashed var(--highlight); border-radius: 10px; color: var(--highlight); }
         .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button.calc { flex: 2; background: var(--highlight); color: var(--bg); border: none; padding: 12px; border-radius: 8px; font-weight: bold; }
-        button.reset { flex: 1; background: var(--accent); color: white; border: none; border-radius: 8px; }
+        button.calc { flex: 2; background: var(--highlight); color: var(--bg); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button.reset { flex: 1; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="openTab('skills')">Skills</button>
-        <button class="tab-btn" onclick="openTab('match')">Match</button>
+    <div id="lock-screen">
+        <div class="lock-box">
+            <h2 style="font-size: 1.2rem; margin-bottom: 15px;">VEX HUB ACCESS</h2>
+            <input type="password" id="passInput" placeholder="Enter PIN" style="width: 80%; margin-bottom: 15px;">
+            <button class="calc" style="width: 100%;" onclick="checkPass()">Unlock</button>
+        </div>
     </div>
 
-    <div id="skills" class="card active">
-        <h2>SKILLS SCORER</h2>
-        <div class="input-row"><span>Blocks in Goal (1pt)</span><input type="number" id="s_blocks" value="0"></div>
-        <div class="input-row"><span>Long Control Zones (5pt)</span><input type="number" id="s_long" value="0" max="2"></div>
-        <div class="input-row"><span>Center Control Zones (10pt)</span><input type="number" id="s_center" value="0" max="2"></div>
-        <div class="input-row"><span>Park Zones Cleared (5pt)</span><input type="number" id="s_parkZ" value="0" max="2"></div>
-        <div class="input-row"><span>Loaders Cleared (5pt)</span><input type="number" id="s_load" value="0" max="4"></div>
-        <div class="input-row"><span>Robot Parked (15pt)</span><input type="checkbox" id="s_parkR"></div>
-        
-        <div class="btn-group">
-            <button class="reset" onclick="resetSkills()">Reset</button>
-            <button class="calc" onclick="calcSkills()">Calculate Skills</button>
-        </div>
-        <div class="result-box" id="res_skills">Score: 0</div>
-    </div>
-
-    <div id="match" class="card">
-        <h2>MATCH SCORER</h2>
-        <div class="input-row" style="justify-content: center; gap: 10px;">
-            <span>Auto Bonus (10pt):</span>
-            <select id="m_auto" style="background:var(--bg); color:white; padding:5px;">
-                <option value="none">None</option>
-                <option value="red">Red</option>
-                <option value="blue">Blue</option>
-            </select>
+    <div id="main-content">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('skills')">Skills</button>
+            <button class="tab-btn" onclick="openTab('match')">Match</button>
         </div>
 
-        <div class="alliance-grid">
-            <div class="red-side">
-                <div class="alliance-header red-h">RED</div>
-                <div class="input-row">Blocks (3pt) <input type="number" id="r_blocks" value="0"></div>
-                <div class="input-row">Long (10pt) <input type="number" id="r_long" value="0"></div>
-                <div class="input-row">C-Upper (8pt) <input type="number" id="r_cu" value="0"></div>
-                <div class="input-row">C-Lower (6pt) <input type="number" id="r_cl" value="0"></div>
-                <div class="input-row">Parked (0/1/2) <input type="number" id="r_park" value="0" min="0" max="2"></div>
+        <div id="skills" class="card active">
+            <h2>SKILLS SCORER</h2>
+            <div class="input-row"><span>Blocks in Goal (1pt)</span><input type="number" id="s_blocks" value="0"></div>
+            <div class="input-row"><span>Long Control Zones (5pt)</span><input type="number" id="s_long" value="0" max="2"></div>
+            <div class="input-row"><span>Center Control Zones (10pt)</span><input type="number" id="s_center" value="0" max="2"></div>
+            <div class="input-row"><span>Park Zones Cleared (5pt)</span><input type="number" id="s_parkZ" value="0" max="2"></div>
+            <div class="input-row"><span>Loaders Cleared (5pt)</span><input type="number" id="s_load" value="0" max="4"></div>
+            <div class="input-row"><span>Robot Parked (15pt)</span><input type="checkbox" id="s_parkR"></div>
+            
+            <div class="btn-group">
+                <button class="reset" onclick="resetSkills()">Reset</button>
+                <button class="calc" onclick="calcSkills()">Calculate Skills</button>
             </div>
-            <div class="blue-side">
-                <div class="alliance-header blue-h">BLUE</div>
-                <div class="input-row">Blocks (3pt) <input type="number" id="b_blocks" value="0"></div>
-                <div class="input-row">Long (10pt) <input type="number" id="b_long" value="0"></div>
-                <div class="input-row">C-Upper (8pt) <input type="number" id="b_cu" value="0"></div>
-                <div class="input-row">C-Lower (6pt) <input type="number" id="b_cl" value="0"></div>
-                <div class="input-row">Parked (0/1/2) <input type="number" id="b_park" value="0" min="0" max="2"></div>
-            </div>
+            <div class="result-box" id="res_skills">Score: 0</div>
         </div>
 
-        <div class="btn-group">
-            <button class="reset" onclick="resetMatch()">Reset</button>
-            <button class="calc" onclick="calcMatch()">Calculate Match</button>
+        <div id="match" class="card">
+            <h2>MATCH SCORER</h2>
+            <div class="input-row" style="justify-content: center; gap: 10px;">
+                <span>Auto Bonus (10pt):</span>
+                <select id="m_auto" style="background:var(--bg); color:white; padding:5px; border-radius: 5px;">
+                    <option value="none">None</option>
+                    <option value="red">Red</option>
+                    <option value="blue">Blue</option>
+                </select>
+            </div>
+
+            <div class="alliance-grid">
+                <div class="red-side">
+                    <div class="alliance-header red-h">RED</div>
+                    <div class="input-row">Blocks (3pt) <input type="number" id="r_blocks" value="0"></div>
+                    <div class="input-row">Long (10pt) <input type="number" id="r_long" value="0"></div>
+                    <div class="input-row">C-Upper (8pt) <input type="number" id="r_cu" value="0"></div>
+                    <div class="input-row">C-Lower (6pt) <input type="number" id="r_cl" value="0"></div>
+                    <div class="input-row">Parked (0/1/2) <input type="number" id="r_park" value="0" min="0" max="2"></div>
+                </div>
+                <div class="blue-side">
+                    <div class="alliance-header blue-h">BLUE</div>
+                    <div class="input-row">Blocks (3pt) <input type="number" id="b_blocks" value="0"></div>
+                    <div class="input-row">Long (10pt) <input type="number" id="b_long" value="0"></div>
+                    <div class="input-row">C-Upper (8pt) <input type="number" id="b_cu" value="0"></div>
+                    <div class="input-row">C-Lower (6pt) <input type="number" id="b_cl" value="0"></div>
+                    <div class="input-row">Parked (0/1/2) <input type="number" id="b_park" value="0" min="0" max="2"></div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="reset" onclick="resetMatch()">Reset</button>
+                <button class="calc" onclick="calcMatch()">Calculate Match</button>
+            </div>
+            <div class="result-box" id="res_match">Red 0 - 0 Blue</div>
         </div>
-        <div class="result-box" id="res_match">Red 0 - 0 Blue</div>
     </div>
 
     <script>
+        // Password Verification
+        function checkPass() {
+            const input = document.getElementById('passInput').value;
+            if (input === "1127") {
+                document.getElementById('lock-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } else {
+                alert("Incorrect PIN. Access Denied.");
+            }
+        }
+
+        // Allow 'Enter' key to unlock
+        document.getElementById('passInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPass();
+            }
+        });
+
+        // Navigation
         function openTab(tabId) {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -99,6 +151,7 @@
             event.currentTarget.classList.add('active');
         }
 
+        // Scoring Logic
         function calcSkills() {
             let score = (parseInt(document.getElementById('s_blocks').value) || 0) * 1;
             score += (parseInt(document.getElementById('s_long').value) || 0) * 5;
